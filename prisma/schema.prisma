@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  plan          Plan      @default(FREE)
+  createdAt     DateTime  @default(now())
+
+  accounts     Account[]
+  sessions     Session[]
+  notes        Note[]
+  chatMessages ChatMessage[]
+  highlights   Highlight[]
+  usageLogs    UsageLog[]
+  collections  Collection[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Note {
+  id               String     @id @default(cuid())
+  userId           String?
+  sourceType       SourceType @default(YOUTUBE)
+  sourceUrl        String
+  sourceTitle      String?
+  sourceThumbnail  String?
+  durationSec      Int?
+  transcript       String?
+  summary          Json?
+  language         String     @default("ko")
+  isPublic         Boolean    @default(false)
+  status           NoteStatus @default(PENDING)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  transcriptSegments TranscriptSegment[]
+  chatMessages       ChatMessage[]
+  highlights         Highlight[]
+  collectionNotes    CollectionNote[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([sourceUrl])
+}
+
+model TranscriptSegment {
+  id       String @id @default(cuid())
+  noteId   String
+  startSec Float
+  endSec   Float
+  text     String
+  seq      Int
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId, seq])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  noteId    String
+  userId    String?
+  role      MessageRole
+  content   String
+  createdAt DateTime    @default(now())
+
+  note Note  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([noteId, createdAt])
+}
+
+model Highlight {
+  id        String   @id @default(cuid())
+  noteId    String
+  userId    String
+  text      String
+  startSec  Float?
+  color     String   @default("yellow")
+  createdAt DateTime @default(now())
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Collection {
+  id      String @id @default(cuid())
+  userId  String
+  name    String
+  icon    String @default("folder")
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionNotes CollectionNote[]
+}
+
+model CollectionNote {
+  collectionId String
+  noteId       String
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  note       Note       @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, noteId])
+}
+
+model UsageLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  tokens    Int?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum SourceType {
+  YOUTUBE
+  PDF
+  AUDIO
+  BLOG
+  TEXT
+}
+
+enum NoteStatus {
+  PENDING
+  PROCESSING
+  DONE
+  ERROR
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
