@@ -72,7 +72,7 @@ export function ChatPanel({ noteId }: { noteId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-[500px]">
+    <div className="flex flex-col h-[calc(100vh-220px)]">
       <ScrollArea className="flex-1 pr-2">
         <div className="space-y-4 pb-2">
           {chatMessages.length === 0 && (

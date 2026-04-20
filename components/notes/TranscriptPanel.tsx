@@ -29,7 +29,7 @@ export function TranscriptPanel({ segments, onSeek }: { segments: Segment[]; onS
   }
 
   return (
-    <ScrollArea className="h-[500px] pr-2">
+    <ScrollArea className="h-[calc(100vh-280px)] pr-2">
       <div className="space-y-1 pb-6">
         {segments.map((seg, i) => {
           const isActive = i === activeIndex;

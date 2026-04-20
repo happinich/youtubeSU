@@ -1,14 +1,17 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { extractVideoId } from "@/lib/youtube";
+import { auth } from "@/auth";
 import { SessionProvider } from "next-auth/react";
 import { Header } from "@/components/layout/Header";
 import { NoteViewer } from "@/components/notes/NoteViewer";
 import { NoteProcessing } from "@/components/notes/NoteProcessing";
+import { NoteHeader } from "@/components/notes/NoteHeader";
 import type { SummaryJSON } from "@/lib/summarize";
 
 export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
 
   const note = await prisma.note.findUnique({
     where: { id },
@@ -18,27 +21,20 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
   if (!note) notFound();
 
   const videoId = note.sourceUrl ? extractVideoId(note.sourceUrl) : null;
+  const isOwner = !!session?.user?.id && note.userId === session.user.id;
 
   return (
     <SessionProvider>
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="container py-6 flex-1">
-          <div className="mb-4">
-            <h1 className="text-xl font-bold line-clamp-2">
-              {note.sourceTitle ?? "영상 처리 중..."}
-            </h1>
-            {note.sourceUrl && (
-              <a
-                href={note.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-muted-foreground hover:underline mt-1 inline-block"
-              >
-                {note.sourceUrl}
-              </a>
-            )}
-          </div>
+          <NoteHeader
+            noteId={note.id}
+            initialTitle={note.sourceTitle ?? "영상 처리 중..."}
+            sourceUrl={note.sourceUrl ?? ""}
+            isOwner={isOwner}
+            showExport={note.status === "DONE"}
+          />
 
           {note.status === "DONE" && note.summary && videoId ? (
             <NoteViewer

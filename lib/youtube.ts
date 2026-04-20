@@ -1,3 +1,5 @@
+import { YoutubeTranscript } from "youtube-transcript";
+
 export function extractVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
@@ -196,6 +198,22 @@ async function fetchCaptionTracks(
 }
 
 export async function getTranscript(videoId: string): Promise<TranscriptItem[]> {
+  // Try youtube-transcript package first (more reliable)
+  try {
+    const items = await YoutubeTranscript.fetchTranscript(videoId, { lang: "ko" })
+      .catch(() => YoutubeTranscript.fetchTranscript(videoId));
+    if (items && items.length > 0) {
+      return items.map((item, seq) => ({
+        text: item.text,
+        startSec: item.offset / 1000,
+        endSec: (item.offset + item.duration) / 1000,
+        seq,
+      }));
+    }
+  } catch {
+    // fall through to manual extraction
+  }
+
   const { tracks, lastError } = await fetchCaptionTracks(videoId);
 
   if (tracks.length === 0) throw new NoTranscriptError(videoId, lastError);
@@ -210,18 +228,32 @@ export async function getTranscript(videoId: string): Promise<TranscriptItem[]> 
   const safeBaseUrl = track.baseUrl.startsWith("https://www.youtube.com/") ? track.baseUrl : null;
   if (!safeBaseUrl) throw new NoTranscriptError(videoId, "자막 URL 도메인 불일치");
 
-  const captionRes = await fetch(`${safeBaseUrl}&fmt=json3`);
+  const captionRes = await fetch(`${safeBaseUrl}&fmt=json3`, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "*/*",
+      "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      "Referer": `https://www.youtube.com/watch?v=${videoId}`,
+      "Origin": "https://www.youtube.com",
+      "Cookie": "CONSENT=YES+cb; SOCS=CAI",
+    },
+  });
   if (!captionRes.ok) {
     throw new NoTranscriptError(videoId, `자막 다운로드 실패 HTTP ${captionRes.status}`);
   }
 
-  const captionData = (await captionRes.json()) as {
-    events?: Array<{
-      tStartMs: number;
-      dDurationMs?: number;
-      segs?: Array<{ utf8: string }>;
-    }>;
-  };
+  const captionText = await captionRes.text();
+  if (!captionText || captionText.trim() === "") {
+    throw new NoTranscriptError(videoId, "자막 응답이 비어있음 — 자막이 없거나 접근 제한된 영상");
+  }
+
+  let captionData: { events?: Array<{ tStartMs: number; dDurationMs?: number; segs?: Array<{ utf8: string }> }> };
+  try {
+    captionData = JSON.parse(captionText);
+  } catch {
+    throw new NoTranscriptError(videoId, "자막 JSON 파싱 실패 — YouTube 응답 형식 변경 가능성");
+  }
 
   const segments: TranscriptItem[] = [];
   for (const event of captionData.events ?? []) {
