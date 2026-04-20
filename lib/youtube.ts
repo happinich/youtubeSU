@@ -111,12 +111,14 @@ async function fetchPlayerResponse(
 
 // Fallback: extract ytInitialPlayerResponse from YouTube page HTML
 async function fetchCaptionTracksFromPage(videoId: string): Promise<CaptionTrack[]> {
-  const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+  const res = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      // Bypass YouTube consent/cookie gate that Vercel datacenter IPs often hit
+      Cookie: "CONSENT=YES+cb; SOCS=CAI; GPS=1; YSC=x; VISITOR_INFO1_LIVE=x",
     },
   });
   if (!res.ok) return [];
