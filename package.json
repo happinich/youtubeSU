@@ -28,6 +28,7 @@
     "@radix-ui/react-toast": "^1.2.6",
     "@upstash/redis": "^1.34.9",
     "@vercel/functions": "^3.4.3",
+    "@xyflow/react": "^12.10.2",
     "autoprefixer": "^10.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

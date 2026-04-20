@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { formatSeconds } from "@/lib/utils";
 import type { SummaryJSON } from "@/lib/summarize";
 
@@ -9,12 +8,12 @@ interface SummaryPanelProps {
   onSeek: (sec: number) => void;
 }
 
-function TimestampPill({ sec, onSeek }: { sec: number; onSeek: (s: number) => void }) {
+function TsBtn({ sec, onSeek }: { sec: number; onSeek: (s: number) => void }) {
   return (
-    <button
-      onClick={() => onSeek(sec)}
-      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors shrink-0"
-    >
+    <button onClick={() => onSeek(sec)}
+      style={{ font: "600 12px var(--font-mono, monospace)", color: "var(--st-ink)", background: "var(--st-paper)", border: "1px solid var(--st-line)", padding: "4px 9px", borderRadius: 6, cursor: "pointer", height: "fit-content", transition: "background .15s, border-color .15s", textAlign: "center", whiteSpace: "nowrap" }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--st-accent-soft)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--st-accent)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--st-paper)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--st-line)"; }}>
       {formatSeconds(sec)}
     </button>
   );
@@ -22,125 +21,94 @@ function TimestampPill({ sec, onSeek }: { sec: number; onSeek: (s: number) => vo
 
 export function SummaryPanel({ summary, onSeek }: SummaryPanelProps) {
   return (
-    <div className="max-w-2xl mx-auto space-y-10 pb-16 px-2">
-
-      {/* TL;DR */}
-      {summary.tldr && (
-        <div className="text-base leading-relaxed text-foreground/90 border-l-4 border-primary pl-4 py-1">
-          {summary.tldr}
-        </div>
-      )}
+    <div style={{ fontFamily: "var(--font-inter, Inter), var(--font-noto, sans-serif)" }}>
 
       {/* Tags */}
       {summary.tags?.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 32 }}>
           {summary.tags.map((tag, i) => (
-            <Badge key={i} variant="secondary" className="text-xs rounded-full px-3">
-              {tag}
-            </Badge>
+            <span key={i} style={{ font: "500 11px var(--font-mono, monospace)", padding: "3px 10px", borderRadius: 999, background: "var(--st-paper-2)", color: "var(--st-ink-3)", border: "1px solid var(--st-line-2)" }}>{tag}</span>
           ))}
         </div>
       )}
 
-      {/* Table of Contents */}
-      {summary.sections?.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">목차</p>
-          <ol className="space-y-1.5">
-            {summary.sections.map((sec, i) => (
-              <li key={i}>
-                <button
-                  onClick={() => onSeek(sec.start_sec)}
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors text-left"
-                >
-                  {i + 1}. {sec.title}
-                </button>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      <hr className="border-border" />
-
       {/* Key Points */}
       {summary.key_points?.length > 0 && (
-        <section className="space-y-4">
+        <section style={{ marginBottom: 36 }}>
+          <h2 style={{ font: "700 18px var(--font-inter, Inter)", letterSpacing: "-0.01em", color: "var(--st-ink)", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
+            🔑 핵심 포인트 <span style={{ font: "500 12px var(--font-mono, monospace)", color: "var(--st-ink-3)", fontWeight: 400 }}>{summary.key_points.length}개</span>
+          </h2>
           {summary.key_points.map((kp, i) => (
-            <div key={i} className="flex gap-4 group">
-              <TimestampPill sec={kp.timestamp_sec} onSeek={onSeek} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground leading-snug mb-1">{kp.title}</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">{kp.content}</p>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "72px 1fr", gap: 16, marginBottom: 20 }}>
+              <TsBtn sec={kp.timestamp_sec} onSeek={onSeek} />
+              <div>
+                <h3 style={{ margin: "0 0 4px", font: "600 15px var(--font-inter, Inter)", color: "var(--st-ink)", letterSpacing: "-0.01em" }}>{kp.title}</h3>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--st-ink-2)", lineHeight: 1.55 }}>{kp.content}</p>
               </div>
             </div>
           ))}
         </section>
       )}
 
-      <hr className="border-border" />
-
       {/* Sections */}
       {summary.sections?.length > 0 && (
-        <div className="space-y-10">
+        <section style={{ marginBottom: 36 }}>
+          <h2 style={{ font: "700 18px var(--font-inter, Inter)", letterSpacing: "-0.01em", color: "var(--st-ink)", margin: "0 0 14px" }}>📑 섹션별 요약</h2>
           {summary.sections.map((sec, i) => (
-            <section key={i}>
-              <div className="flex items-baseline gap-3 mb-3">
-                <h2 className="text-lg font-bold leading-snug">
-                  {i + 1}. {sec.title}
-                </h2>
-                <TimestampPill sec={sec.start_sec} onSeek={onSeek} />
+            <div key={i} style={{ border: "1px solid var(--st-line)", borderRadius: 10, padding: "16px 18px", marginBottom: 10, background: "var(--st-paper)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                <h3 style={{ margin: 0, font: "600 15px var(--font-inter, Inter)", color: "var(--st-ink)" }}>{sec.title}</h3>
+                <button onClick={() => onSeek(sec.start_sec)}
+                  style={{ font: "500 11px var(--font-mono, monospace)", color: "var(--st-ink-3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  {formatSeconds(sec.start_sec)} — {formatSeconds(sec.end_sec)}
+                </button>
               </div>
-              <p className="text-sm text-foreground/80 leading-relaxed">{sec.summary}</p>
-            </section>
+              <p style={{ margin: 0, fontSize: 14, color: "var(--st-ink-2)", lineHeight: 1.55 }}>{sec.summary}</p>
+            </div>
           ))}
-        </div>
+        </section>
       )}
 
       {/* Quotes */}
       {summary.quotes?.length > 0 && (
-        <section>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">주요 발언</p>
-          <div className="space-y-3">
-            {summary.quotes.map((q, i) => (
-              <blockquote key={i} className="border-l-2 border-muted-foreground/30 pl-4 text-sm italic text-muted-foreground leading-relaxed">
-                {q}
-              </blockquote>
-            ))}
-          </div>
+        <section style={{ marginBottom: 36 }}>
+          <h2 style={{ font: "700 18px var(--font-inter, Inter)", letterSpacing: "-0.01em", color: "var(--st-ink)", margin: "0 0 14px" }}>💬 인상적인 발언</h2>
+          {summary.quotes.map((q, i) => (
+            <div key={i} style={{ borderLeft: "3px solid var(--st-accent)", padding: "2px 0 2px 14px", marginBottom: 14, font: "500 15px/1.5 var(--font-inter, Inter)", color: "var(--st-ink)", fontStyle: "italic" }}>
+              "{q}"
+            </div>
+          ))}
         </section>
       )}
 
       {/* Action Items */}
       {summary.action_items?.length > 0 && (
-        <section>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">실행 아이템</p>
-          <ul className="space-y-2">
+        <section style={{ marginBottom: 36 }}>
+          <h2 style={{ font: "700 18px var(--font-inter, Inter)", letterSpacing: "-0.01em", color: "var(--st-ink)", margin: "0 0 14px" }}>✅ 실행 아이템</h2>
+          <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
             {summary.action_items.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm">
-                <span className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-primary/40 flex items-center justify-center">
-                  <span className="h-1.5 w-1.5 rounded-sm bg-primary/60" />
-                </span>
-                <span className="text-foreground/80 leading-relaxed">{item}</span>
+              <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10, fontSize: 14, color: "var(--st-ink-2)", lineHeight: 1.55 }}>
+                <span style={{ width: 18, height: 18, border: "2px solid var(--st-accent)", borderRadius: 4, flexShrink: 0, marginTop: 2, display: "inline-block" }} />
+                {item}
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      {/* Background & Opposing Views */}
+      {/* Background & Opposing */}
       {(summary.background || summary.opposing_views) && (
-        <div className="grid grid-cols-1 gap-4">
+        <div style={{ display: "grid", gap: 12, marginBottom: 36 }}>
           {summary.background && (
-            <div className="rounded-xl bg-muted/50 p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">배경 지식</p>
-              <p className="text-sm text-foreground/80 leading-relaxed">{summary.background}</p>
+            <div style={{ borderRadius: 10, background: "var(--st-paper-2)", padding: "16px 18px" }}>
+              <div style={{ font: "500 11px var(--font-mono, monospace)", color: "var(--st-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>배경 지식</div>
+              <p style={{ margin: 0, fontSize: 14, color: "var(--st-ink-2)", lineHeight: 1.55 }}>{summary.background}</p>
             </div>
           )}
           {summary.opposing_views && (
-            <div className="rounded-xl bg-muted/50 p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">반대 관점 / 한계</p>
-              <p className="text-sm text-foreground/80 leading-relaxed">{summary.opposing_views}</p>
+            <div style={{ borderRadius: 10, background: "var(--st-paper-2)", padding: "16px 18px" }}>
+              <div style={{ font: "500 11px var(--font-mono, monospace)", color: "var(--st-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>반대 관점 / 한계</div>
+              <p style={{ margin: 0, fontSize: 14, color: "var(--st-ink-2)", lineHeight: 1.55 }}>{summary.opposing_views}</p>
             </div>
           )}
         </div>

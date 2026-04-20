@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const notoSansKr = Noto_Sans_KR({ subsets: ["latin"], variable: "--font-noto", weight: ["400","500","600","700"] });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["400","500","600"] });
 
 export const metadata: Metadata = {
   title: "SummaryTube — YouTube 영상 AI 요약",
@@ -12,7 +14,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body className={inter.className}>{children}</body>
+      <body className={`${inter.variable} ${notoSansKr.variable} ${jetbrainsMono.variable}`}>{children}</body>
     </html>
   );
 }
