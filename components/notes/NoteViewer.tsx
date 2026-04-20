@@ -85,10 +85,10 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
   const activeToc = summary.sections?.findIndex(s => playerCurrentTime >= s.start_sec && playerCurrentTime < s.end_sec);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", minHeight: "calc(100vh - 110px)", fontFamily: "var(--font-inter, Inter), var(--font-noto, sans-serif)" }}>
+    <div className="nv-layout" style={{ fontFamily: "var(--font-inter, Inter), var(--font-noto, sans-serif)" }}>
 
       {/* Left sidebar */}
-      <aside style={{ background: "var(--st-paper)", borderRight: "1px solid var(--st-line)", padding: 20, position: "sticky", top: 110, height: "calc(100vh - 110px)", overflowY: "auto" }}>
+      <aside className="nv-sidebar">
         {/* Player */}
         <div style={{ aspectRatio: "16/9", borderRadius: 10, background: "linear-gradient(135deg, oklch(0.32 0.08 260), oklch(0.22 0.06 280))", position: "relative", overflow: "hidden", marginBottom: 10 }}>
           <div id="yt-player" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
@@ -120,7 +120,7 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
       </aside>
 
       {/* Main content */}
-      <main style={{ padding: "40px 56px 120px", maxWidth: 780, overflowY: "auto" }}>
+      <main className="nv-main">
         <div style={{ font: "500 11px var(--font-mono, monospace)", color: "var(--st-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
           YouTube · {durationSec ? `${Math.floor(durationSec / 60)}분` : ""} · 한국어 요약
         </div>

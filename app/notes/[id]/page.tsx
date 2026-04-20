@@ -25,7 +25,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
     <SessionProvider>
       <div style={{ minHeight: "100vh", background: "var(--st-paper-2)", fontFamily: "var(--font-inter, Inter), var(--font-noto, sans-serif)" }}>
         {/* Top bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 40px", background: "var(--st-paper)", borderBottom: "1px solid var(--st-line)", position: "sticky", top: 0, zIndex: 10 }}>
+        <div className="np-topbar">
           <Link href="/dashboard" style={{ color: "var(--st-ink-2)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>← 대시보드</Link>
           <Link href="/" style={{ fontWeight: 800, fontSize: 17, letterSpacing: "-0.02em", textDecoration: "none", color: "var(--st-ink)" }}>
             SummaryTube<span style={{ color: "var(--st-accent)" }}>.</span>

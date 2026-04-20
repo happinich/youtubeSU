@@ -87,3 +87,112 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── NoteViewer responsive layout ── */
+.nv-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: calc(100vh - 110px);
+}
+.nv-sidebar {
+  background: var(--st-paper);
+  border-right: 1px solid var(--st-line);
+  padding: 20px;
+  position: sticky;
+  top: 110px;
+  height: calc(100vh - 110px);
+  overflow-y: auto;
+}
+.nv-main {
+  padding: 40px 56px 120px;
+  max-width: 780px;
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .nv-layout {
+    grid-template-columns: 240px 1fr;
+  }
+  .nv-main {
+    padding: 32px 36px 100px;
+  }
+}
+
+@media (max-width: 860px) {
+  .nv-layout {
+    grid-template-columns: 200px 1fr;
+  }
+  .nv-main {
+    padding: 24px 24px 100px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 680px) {
+  .nv-layout {
+    grid-template-columns: 1fr;
+  }
+  .nv-sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--st-line);
+    padding: 16px;
+  }
+  .nv-main {
+    padding: 20px 16px 100px;
+    max-width: 100%;
+  }
+}
+
+/* ── NotePage topbar responsive ── */
+.np-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 40px;
+  background: var(--st-paper);
+  border-bottom: 1px solid var(--st-line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+@media (max-width: 680px) {
+  .np-topbar {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+}
+
+/* ── Dashboard topbar responsive ── */
+.db-topbar {
+  display: flex;
+  align-items: center;
+  padding: 14px 56px;
+  background: var(--st-paper);
+  border-bottom: 1px solid var(--st-line);
+  gap: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.db-hero {
+  background: var(--st-paper);
+  border-bottom: 1px solid var(--st-line);
+  padding: 32px 56px 24px;
+}
+.db-list {
+  padding: 24px 56px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (max-width: 860px) {
+  .db-topbar { padding: 12px 28px; gap: 16px; }
+  .db-hero   { padding: 24px 28px 20px; }
+  .db-list   { padding: 20px 28px 80px; }
+}
+@media (max-width: 600px) {
+  .db-topbar { padding: 10px 16px; gap: 10px; }
+  .db-hero   { padding: 20px 16px 16px; }
+  .db-list   { padding: 16px 16px 80px; }
+}
