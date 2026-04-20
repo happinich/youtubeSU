@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
+
+export const maxDuration = 60;
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getCachedSummary, setCachedSummary } from "@/lib/redis";
@@ -40,9 +43,13 @@ async function processNote(noteId: string, videoId: string) {
     await setCachedSummary(videoId, noteId);
   } catch (error) {
     console.error("Note processing failed:", error);
+    const message = error instanceof Error ? error.message : String(error);
     await prisma.note.update({
       where: { id: noteId },
-      data: { status: "ERROR" },
+      data: {
+        status: "ERROR",
+        sourceTitle: `오류: ${message.slice(0, 200)}`,
+      },
     });
   }
 }
@@ -97,7 +104,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  processNote(note.id, videoId).catch(console.error);
+  // waitUntil keeps the Vercel function alive until processing completes
+  waitUntil(processNote(note.id, videoId));
 
   return NextResponse.json({ id: note.id, status: "PENDING" }, { status: 201 });
 }
