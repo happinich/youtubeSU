@@ -45,7 +45,7 @@ async function processNote(noteId: string, videoId: string) {
     console.error("Note processing failed:", error);
     let message = "처리 중 오류가 발생했습니다. 다시 시도해 주세요.";
     if (error instanceof NoTranscriptError) {
-      message = "이 영상은 자막을 제공하지 않습니다. 자막(CC)이 있는 영상을 사용해 주세요.";
+      message = error.message.slice(0, 200);
     } else if (error instanceof Error) {
       message = error.message.slice(0, 200);
     }
