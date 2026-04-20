@@ -6,7 +6,17 @@ import Anthropic from "@anthropic-ai/sdk";
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
   const { id } = await params;
+
+  const note = await prisma.note.findUnique({ where: { id }, select: { userId: true, isPublic: true } });
+  if (!note) return NextResponse.json({ error: "노트를 찾을 수 없습니다." }, { status: 404 });
+
+  const isOwner = session?.user?.id && note.userId === session.user.id;
+  if (!isOwner && !note.isPublic) {
+    return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+  }
+
   const messages = await prisma.chatMessage.findMany({
     where: { noteId: id },
     orderBy: { createdAt: "asc" },

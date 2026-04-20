@@ -3,15 +3,21 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
   const { id } = await params;
+
   const note = await prisma.note.findUnique({
     where: { id },
-    include: {
-      transcriptSegments: { orderBy: { seq: "asc" } },
-    },
+    include: { transcriptSegments: { orderBy: { seq: "asc" } } },
   });
 
   if (!note) return NextResponse.json({ error: "노트를 찾을 수 없습니다." }, { status: 404 });
+
+  const isOwner = session?.user?.id && note.userId === session.user.id;
+  const isAnonymousOwner = !note.userId; // note created without login
+  if (!isOwner && !isAnonymousOwner && !note.isPublic) {
+    return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
+  }
 
   return NextResponse.json(note);
 }

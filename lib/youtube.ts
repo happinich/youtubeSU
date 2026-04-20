@@ -207,7 +207,10 @@ export async function getTranscript(videoId: string): Promise<TranscriptItem[]> 
     tracks.find((t) => t.languageCode === "en") ??
     tracks[0];
 
-  const captionRes = await fetch(`${track.baseUrl}&fmt=json3`);
+  const safeBaseUrl = track.baseUrl.startsWith("https://www.youtube.com/") ? track.baseUrl : null;
+  if (!safeBaseUrl) throw new NoTranscriptError(videoId, "자막 URL 도메인 불일치");
+
+  const captionRes = await fetch(`${safeBaseUrl}&fmt=json3`);
   if (!captionRes.ok) {
     throw new NoTranscriptError(videoId, `자막 다운로드 실패 HTTP ${captionRes.status}`);
   }
