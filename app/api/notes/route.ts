@@ -5,7 +5,7 @@ export const maxDuration = 60;
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getCachedSummary, setCachedSummary } from "@/lib/redis";
-import { extractVideoId, getTranscript, getVideoMetadata, transcriptToText } from "@/lib/youtube";
+import { extractVideoId, getTranscript, getVideoMetadata, transcriptToText, NoTranscriptError } from "@/lib/youtube";
 import { summarize } from "@/lib/summarize";
 
 async function processNote(noteId: string, videoId: string) {
@@ -43,13 +43,15 @@ async function processNote(noteId: string, videoId: string) {
     await setCachedSummary(videoId, noteId);
   } catch (error) {
     console.error("Note processing failed:", error);
-    const message = error instanceof Error ? error.message : String(error);
+    let message = "처리 중 오류가 발생했습니다. 다시 시도해 주세요.";
+    if (error instanceof NoTranscriptError) {
+      message = "이 영상은 자막을 제공하지 않습니다. 자막(CC)이 있는 영상을 사용해 주세요.";
+    } else if (error instanceof Error) {
+      message = error.message.slice(0, 200);
+    }
     await prisma.note.update({
       where: { id: noteId },
-      data: {
-        status: "ERROR",
-        sourceTitle: `오류: ${message.slice(0, 200)}`,
-      },
+      data: { status: "ERROR", sourceTitle: message },
     });
   }
 }

@@ -19,16 +19,38 @@ export interface TranscriptItem {
   seq: number;
 }
 
+export class NoTranscriptError extends Error {
+  constructor(videoId: string) {
+    super(`이 영상(${videoId})은 자막이 제공되지 않습니다.`);
+    this.name = "NoTranscriptError";
+  }
+}
+
 export async function getTranscript(videoId: string): Promise<TranscriptItem[]> {
-  const raw = await YoutubeTranscript.fetchTranscript(videoId, { lang: "ko" }).catch(() =>
-    YoutubeTranscript.fetchTranscript(videoId)
-  );
-  return raw.map((item, i) => ({
-    text: item.text,
-    startSec: item.offset / 1000,
-    endSec: (item.offset + item.duration) / 1000,
-    seq: i,
-  }));
+  // 한국어 → 영어 → 기본값 순으로 시도
+  const attempts = [
+    () => YoutubeTranscript.fetchTranscript(videoId, { lang: "ko" }),
+    () => YoutubeTranscript.fetchTranscript(videoId, { lang: "en" }),
+    () => YoutubeTranscript.fetchTranscript(videoId),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const raw = await attempt();
+      if (raw && raw.length > 0) {
+        return raw.map((item, i) => ({
+          text: item.text,
+          startSec: item.offset / 1000,
+          endSec: (item.offset + item.duration) / 1000,
+          seq: i,
+        }));
+      }
+    } catch {
+      // 다음 시도로
+    }
+  }
+
+  throw new NoTranscriptError(videoId);
 }
 
 export interface VideoMetadata {
