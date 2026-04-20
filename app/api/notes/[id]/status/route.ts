@@ -27,7 +27,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
             return;
           }
 
-          send({ status: note.status, title: note.sourceTitle, thumbnail: note.sourceThumbnail });
+          const payload: Record<string, unknown> = {
+            status: note.status,
+            title: note.sourceTitle,
+            thumbnail: note.sourceThumbnail,
+          };
+          // sourceTitle에 오류 메시지를 저장해두므로 ERROR 시 노출
+          if (note.status === "ERROR") {
+            payload.message = note.sourceTitle ?? "처리 중 오류가 발생했습니다.";
+          }
+          send(payload);
 
           if (note.status === "DONE" || note.status === "ERROR") {
             controller.close();
