@@ -19,67 +19,78 @@ export interface TranscriptItem {
 
 export class NoTranscriptError extends Error {
   constructor(videoId: string) {
-    super(`이 영상(${videoId})은 자막/스크립트를 제공하지 않습니다.`);
+    super(`이 영상(${videoId})은 스크립트를 제공하지 않습니다.`);
     this.name = "NoTranscriptError";
   }
 }
 
-const YT_HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-};
+interface CaptionTrack {
+  baseUrl: string;
+  languageCode: string;
+  kind?: string;
+}
 
-export async function getTranscript(videoId: string): Promise<TranscriptItem[]> {
-  // YouTube 영상 페이지에서 자막 트랙 URL 추출
-  const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-    headers: YT_HEADERS,
+async function fetchCaptionTracks(videoId: string): Promise<CaptionTrack[]> {
+  // YouTube InnerTube API — 브라우저와 동일한 방식으로 player 응답 요청
+  const res = await fetch("https://www.youtube.com/youtubei/v1/player", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "X-YouTube-Client-Name": "1",
+      "X-YouTube-Client-Version": "2.20231219.04.00",
+      Origin: "https://www.youtube.com",
+      Referer: `https://www.youtube.com/watch?v=${videoId}`,
+    },
+    body: JSON.stringify({
+      videoId,
+      context: {
+        client: {
+          clientName: "WEB",
+          clientVersion: "2.20231219.04.00",
+          hl: "ko",
+          gl: "KR",
+        },
+      },
+    }),
   });
 
-  if (!res.ok) throw new Error(`YouTube 페이지 요청 실패: ${res.status}`);
+  if (!res.ok) throw new Error(`InnerTube API 오류: ${res.status}`);
 
-  const html = await res.text();
+  const data = await res.json() as {
+    captions?: {
+      playerCaptionsTracklistRenderer?: {
+        captionTracks?: CaptionTrack[];
+      };
+    };
+  };
 
-  // ytInitialPlayerResponse 추출
-  const match = html.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]+?\})\s*(?:;|<\/script>)/);
-  if (!match) throw new Error("ytInitialPlayerResponse를 찾을 수 없습니다.");
+  return data?.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+}
 
-  let playerResponse: Record<string, unknown>;
-  try {
-    playerResponse = JSON.parse(match[1]);
-  } catch {
-    throw new Error("ytInitialPlayerResponse JSON 파싱 실패");
-  }
+export async function getTranscript(videoId: string): Promise<TranscriptItem[]> {
+  const tracks = await fetchCaptionTracks(videoId);
 
-  const captionTracks = (
-    playerResponse?.captions as Record<string, unknown>
-  )?.playerCaptionsTracklistRenderer as Record<string, unknown>;
+  if (tracks.length === 0) throw new NoTranscriptError(videoId);
 
-  const tracks = captionTracks?.captionTracks as Array<{
-    baseUrl: string;
-    languageCode: string;
-    kind?: string;
-    name?: { simpleText?: string };
-  }> | undefined;
+  // 한국어 수동 → 영어 수동 → 한국어 자동생성(asr) → 영어 자동생성 → 첫 번째
+  const track =
+    tracks.find((t) => t.languageCode === "ko" && !t.kind) ??
+    tracks.find((t) => t.languageCode === "en" && !t.kind) ??
+    tracks.find((t) => t.languageCode === "ko") ??
+    tracks.find((t) => t.languageCode === "en") ??
+    tracks[0];
 
-  if (!tracks || tracks.length === 0) throw new NoTranscriptError(videoId);
-
-  // 한국어 수동 → 영어 수동 → 한국어 자동생성 → 영어 자동생성 → 첫 번째 순으로 선택
-  const preferred = [
-    tracks.find((t) => t.languageCode === "ko" && !t.kind),
-    tracks.find((t) => t.languageCode === "en" && !t.kind),
-    tracks.find((t) => t.languageCode === "ko"),
-    tracks.find((t) => t.languageCode === "en"),
-    tracks[0],
-  ].find(Boolean)!;
-
-  const captionUrl = preferred.baseUrl + "&fmt=json3";
-  const captionRes = await fetch(captionUrl, { headers: YT_HEADERS });
+  const captionRes = await fetch(`${track.baseUrl}&fmt=json3`);
   if (!captionRes.ok) throw new Error(`자막 데이터 요청 실패: ${captionRes.status}`);
 
   const captionData = await captionRes.json() as {
-    events?: Array<{ tStartMs: number; dDurationMs?: number; segs?: Array<{ utf8: string }> }>;
+    events?: Array<{
+      tStartMs: number;
+      dDurationMs?: number;
+      segs?: Array<{ utf8: string }>;
+    }>;
   };
 
   const segments: TranscriptItem[] = [];
@@ -111,8 +122,9 @@ export interface VideoMetadata {
 }
 
 export async function getVideoMetadata(videoId: string): Promise<VideoMetadata> {
-  const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-  const res = await fetch(oembedUrl);
+  const res = await fetch(
+    `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+  );
   if (!res.ok) {
     return {
       title: "YouTube Video",
