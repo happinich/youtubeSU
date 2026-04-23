@@ -6,6 +6,8 @@ import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { differenceInDays } from "date-fns";
 import { NoteRow, type NoteRowItem } from "./NoteRow";
+import { SearchDialog } from "./SearchDialog";
+import { ThemeControls } from "@/components/ThemeControls";
 
 const FILTERS = [
   { key: "all", label: "전체" },
@@ -60,6 +62,10 @@ export function DashboardClient({ notes: initialNotes, userName }: { notes: Note
     setNotes(prev => prev.filter(n => n.id !== id));
   }
 
+  function handleUpdate(id: string, patch: Partial<NoteRowItem>) {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, ...patch } : n));
+  }
+
   const filtered = notes.filter(n => {
     if (filter === "all") return true;
     if (filter === "done") return n.status === "DONE";
@@ -71,6 +77,7 @@ export function DashboardClient({ notes: initialNotes, userName }: { notes: Note
 
   return (
     <div style={{ background: "var(--st-paper-2)", minHeight: "100vh", color: "var(--st-ink)", fontFamily: "var(--font-inter, Inter), var(--font-noto, sans-serif)" }}>
+      <SearchDialog notes={notes} />
 
       {/* Top nav */}
       <div className="db-topbar">
@@ -78,15 +85,22 @@ export function DashboardClient({ notes: initialNotes, userName }: { notes: Note
           SummaryTube<span style={{ color: "var(--st-accent)" }}>.</span>
         </Link>
         <nav style={{ display: "flex", gap: 6, marginLeft: 14 }}>
-          {["노트","컬렉션","하이라이트","탐색"].map((l, i) => (
-            <a key={l} href="#" style={{ color: i === 0 ? "var(--st-ink)" : "var(--st-ink-2)", textDecoration: "none", fontSize: 13, fontWeight: 500, padding: "6px 12px", borderRadius: 8, background: i === 0 ? "var(--st-paper-2)" : "none" }}>{l}</a>
+          {[
+            { label: "노트",     href: "/dashboard" },
+            { label: "탐색",     href: "/explore" },
+          ].map(({ label, href }, i) => (
+            <Link key={label} href={href} style={{ color: i === 0 ? "var(--st-ink)" : "var(--st-ink-2)", textDecoration: "none", fontSize: 13, fontWeight: 500, padding: "6px 12px", borderRadius: 8, background: i === 0 ? "var(--st-paper-2)" : "none" }}>{label}</Link>
           ))}
         </nav>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--st-paper-2)", border: "1px solid var(--st-line)", borderRadius: 8, padding: "6px 10px", width: 200, color: "var(--st-ink-3)", fontSize: 13 }}>
-            <span>⌕</span><span style={{ flex: 1 }}>검색…</span>
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--st-paper-2)", border: "1px solid var(--st-line)", borderRadius: 8, padding: "6px 10px", width: 200, color: "var(--st-ink-3)", fontSize: 13, cursor: "pointer" }}
+          >
+            <span>⌕</span><span style={{ flex: 1, textAlign: "left" }}>검색…</span>
             <kbd style={{ font: "500 10px var(--font-mono, monospace)", background: "var(--st-paper)", border: "1px solid var(--st-line)", borderRadius: 4, padding: "1px 5px", color: "var(--st-ink-3)" }}>⌘K</kbd>
-          </div>
+          </button>
+          <ThemeControls />
           {session?.user?.image ? (
             <Image src={session.user.image} alt="" width={30} height={30} style={{ borderRadius: "50%", cursor: "pointer" }} onClick={() => signOut()} />
           ) : (
@@ -132,7 +146,7 @@ export function DashboardClient({ notes: initialNotes, userName }: { notes: Note
               <div style={{ font: "500 11px var(--font-mono, monospace)", color: "var(--st-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", padding: "16px 0 10px", display: "flex", alignItems: "baseline", gap: 10 }}>
                 {g.label} <span style={{ color: "var(--st-ink-4)" }}>{g.items.length}</span>
               </div>
-              {g.items.map(n => <NoteRow key={n.id} note={n} onDelete={handleDelete} />)}
+              {g.items.map(n => <NoteRow key={n.id} note={n} onDelete={handleDelete} onUpdate={handleUpdate} />)}
             </div>
           ))
         )}

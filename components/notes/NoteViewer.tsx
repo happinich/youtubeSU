@@ -5,6 +5,7 @@ import { SummaryPanel } from "./SummaryPanel";
 import { TranscriptPanel } from "./TranscriptPanel";
 import { ChatOrb } from "./ChatOrb";
 import { MindMapView } from "./MindMapView";
+import { HighlightPanel, SelectionToolbar } from "./HighlightPanel";
 import { useNoteStore } from "@/store/noteStore";
 import { formatSeconds } from "@/lib/utils";
 import type { SummaryJSON } from "@/lib/summarize";
@@ -43,11 +44,20 @@ interface YTPlayer {
   getCurrentTime: () => number;
 }
 
+type Tab = "summary" | "highlight" | "mindmap" | "transcript";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "summary",    label: "요약" },
+  { key: "highlight",  label: "하이라이트" },
+  { key: "mindmap",    label: "마인드맵" },
+  { key: "transcript", label: "자막" },
+];
+
 export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, durationSec }: NoteViewerProps) {
   const playerRef = useRef<YTPlayer | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { setPlayerCurrentTime, playerCurrentTime, setSummary, setSegments } = useNoteStore();
-  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "mindmap">("summary");
+  const { setPlayerCurrentTime, playerCurrentTime, setSummary, setSegments, highlights } = useNoteStore();
+  const [activeTab, setActiveTab] = useState<Tab>("summary");
 
   useEffect(() => { setSummary(summary); setSegments(segments); }, [summary, segments, setSummary, setSegments]);
 
@@ -78,10 +88,7 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [videoId, setPlayerCurrentTime]);
 
-  // Progress %
-  const progress = durationSec && durationSec > 0 ? (playerCurrentTime / durationSec) * 100 : 23;
-
-  // Active TOC item
+  const progress = durationSec && durationSec > 0 ? (playerCurrentTime / durationSec) * 100 : 0;
   const activeToc = summary.sections?.findIndex(s => playerCurrentTime >= s.start_sec && playerCurrentTime < s.end_sec);
 
   return (
@@ -89,12 +96,10 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
 
       {/* Left sidebar */}
       <aside className="nv-sidebar">
-        {/* Player */}
         <div style={{ aspectRatio: "16/9", borderRadius: 10, background: "linear-gradient(135deg, oklch(0.32 0.08 260), oklch(0.22 0.06 280))", position: "relative", overflow: "hidden", marginBottom: 10 }}>
           <div id="yt-player" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
         </div>
 
-        {/* Progress bar */}
         <div style={{ height: 3, background: "var(--st-line)", borderRadius: 2, marginBottom: 12, position: "relative" }}>
           <div style={{ position: "absolute", top: 0, left: 0, height: "100%", background: "var(--st-accent)", borderRadius: 2, width: `${Math.min(progress, 100)}%`, transition: "width .3s" }} />
         </div>
@@ -104,7 +109,6 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
         </div>
         {sourceTitle && <div style={{ font: "600 13px var(--font-inter, Inter)", letterSpacing: "-0.01em", color: "var(--st-ink)", margin: "4px 0 12px", lineHeight: 1.35 }}>{sourceTitle}</div>}
 
-        {/* TOC */}
         {summary.sections?.length > 0 && (
           <>
             <div style={{ font: "500 11px var(--font-mono, monospace)", color: "var(--st-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", padding: "12px 0 8px", borderTop: "1px solid var(--st-line)", marginTop: 4 }}>목차</div>
@@ -120,7 +124,7 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
       </aside>
 
       {/* Main content */}
-      <main className="nv-main">
+      <main className="nv-main" style={{ position: "relative" }}>
         <div style={{ font: "500 11px var(--font-mono, monospace)", color: "var(--st-ink-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
           YouTube · {durationSec ? `${Math.floor(durationSec / 60)}분` : ""} · 한국어 요약
         </div>
@@ -130,7 +134,6 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
           </h1>
         )}
 
-        {/* TL;DR */}
         {summary.tldr && (
           <div style={{ background: "var(--st-accent-soft)", borderRadius: 14, padding: "22px 24px", marginBottom: 40, border: "1px solid oklch(0.72 0.15 55 / 0.2)" }}>
             <div style={{ font: "700 11px var(--font-mono, monospace)", color: "var(--st-accent-2)", letterSpacing: "0.1em", marginBottom: 8 }}>TL;DR</div>
@@ -139,22 +142,26 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
         )}
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 2, borderBottom: "1px solid var(--st-line)", marginBottom: 28, position: "sticky", top: 110, background: "var(--st-paper-2)", zIndex: 5, paddingTop: 4 }}>
-          {([
-            { key: "summary", label: "요약" },
-            { key: "mindmap", label: "마인드맵" },
-            { key: "transcript", label: "자막" },
-          ] as const).map(tab => (
+        <div style={{ display: "flex", gap: 2, borderBottom: "1px solid var(--st-line)", marginBottom: 28, position: "sticky", top: 53, background: "var(--st-paper-2)", zIndex: 5, paddingTop: 4 }}>
+          {TABS.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 14px", font: "600 13px var(--font-inter, Inter)", color: activeTab === tab.key ? "var(--st-ink)" : "var(--st-ink-3)", borderBottom: activeTab === tab.key ? "2px solid var(--st-ink)" : "2px solid transparent", marginBottom: -1 }}>
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 14px", font: "600 13px var(--font-inter, Inter)", color: activeTab === tab.key ? "var(--st-ink)" : "var(--st-ink-3)", borderBottom: activeTab === tab.key ? "2px solid var(--st-ink)" : "2px solid transparent", marginBottom: -1, position: "relative" }}>
               {tab.label}
+              {tab.key === "highlight" && highlights.length > 0 && (
+                <span style={{ position: "absolute", top: 8, right: 6, width: 6, height: 6, borderRadius: "50%", background: "var(--st-accent)" }} />
+              )}
             </button>
           ))}
         </div>
 
+        {/* Selection toolbar (only for summary tab) */}
+        {activeTab === "summary" && <SelectionToolbar noteId={noteId} currentSec={playerCurrentTime} />}
+
         {/* Tab content */}
         {activeTab === "summary" ? (
           <SummaryPanel summary={summary} onSeek={seekTo} />
+        ) : activeTab === "highlight" ? (
+          <HighlightPanel noteId={noteId} onSeek={seekTo} />
         ) : activeTab === "mindmap" ? (
           <MindMapView summary={summary} sourceTitle={sourceTitle} onSeek={seekTo} />
         ) : (
@@ -162,7 +169,6 @@ export function NoteViewer({ noteId, videoId, summary, segments, sourceTitle, du
         )}
       </main>
 
-      {/* Floating chat orb */}
       <ChatOrb noteId={noteId} />
     </div>
   );

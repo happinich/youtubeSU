@@ -16,6 +16,16 @@ interface TranscriptSegment {
   seq: number;
 }
 
+export interface Highlight {
+  id: string;
+  noteId: string;
+  userId: string;
+  text: string;
+  startSec: number | null;
+  color: string;
+  createdAt: string;
+}
+
 interface NoteState {
   playerCurrentTime: number;
   setPlayerCurrentTime: (t: number) => void;
@@ -27,6 +37,10 @@ interface NoteState {
   setSegments: (segs: TranscriptSegment[]) => void;
   summary: SummaryJSON | null;
   setSummary: (s: SummaryJSON | null) => void;
+  highlights: Highlight[];
+  setHighlights: (h: Highlight[]) => void;
+  addHighlight: (h: Highlight) => void;
+  removeHighlight: (id: string) => void;
 }
 
 export const useNoteStore = create<NoteState>((set) => ({
@@ -48,4 +62,8 @@ export const useNoteStore = create<NoteState>((set) => ({
   setSegments: (segs) => set({ segments: segs }),
   summary: null,
   setSummary: (s) => set({ summary: s }),
+  highlights: [],
+  setHighlights: (h) => set({ highlights: h }),
+  addHighlight: (h) => set((s) => ({ highlights: [h, ...s.highlights] })),
+  removeHighlight: (id) => set((s) => ({ highlights: s.highlights.filter(h => h.id !== id) })),
 }));

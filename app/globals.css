@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 /* SummaryTube Design System */
+*, *::before, *::after {
+  transition: background-color .2s, border-color .2s, color .1s;
+}
+/* don't animate transforms/opacity globally */
+button, a, [style*="transition"] {
+  transition: background-color .15s, border-color .15s, color .1s, opacity .15s, transform .15s, box-shadow .15s;
+}
+
 :root {
   --st-accent-h: 55;
   --st-accent:      oklch(0.72 0.15 var(--st-accent-h));
@@ -84,7 +92,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    background: var(--st-paper-2);
+    color: var(--st-ink);
   }
 }
 

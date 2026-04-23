@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { SessionProvider } from "next-auth/react";
 import { NoteViewer } from "@/components/notes/NoteViewer";
 import { NoteProcessing } from "@/components/notes/NoteProcessing";
+import { ThemeControls } from "@/components/ThemeControls";
 import Link from "next/link";
 import type { SummaryJSON } from "@/lib/summarize";
 
@@ -33,7 +34,8 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
           <div style={{ flex: 1, minWidth: 0, font: "600 14px var(--font-inter, Inter)", color: "var(--st-ink-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {note.sourceTitle}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <ThemeControls />
             {note.status === "DONE" && (
               <a href={`/api/notes/${note.id}/export`} download
                 style={{ background: "var(--st-paper)", border: "1px solid var(--st-line)", color: "var(--st-ink-2)", fontSize: 12, fontWeight: 500, padding: "6px 12px", borderRadius: 8, cursor: "pointer", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
